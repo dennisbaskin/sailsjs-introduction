@@ -4,11 +4,11 @@
 
 Visit github.com. If you do not have an account, sign up for a free one and install locally:
 
-[https://git-scm.com/book/en/v2/Getting-Started-Installing-Git]
+https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 
 Then follow directions to configure it:
 
-[https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup]
+https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup
 
 ## If you do not have NVM (or node):
 
@@ -95,7 +95,7 @@ First stop the server with CTRL+C then initialize repository:
 ```
 git init
 git add .
-git commit -m "first commit"
+git commit -m 'first commit'
 git remote add origin git@github.com:{username}/{project}.git
 git push -u origin master
 ```
