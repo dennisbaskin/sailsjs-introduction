@@ -181,8 +181,9 @@ need to restart your server.
 After restarting your server (go to terminal running sails -> `CTRL+C` ->
 `sails lift`), refresh the page in your browser. This time you should see a
 fishy 404 page. In your terminal tab/window that is running sails, you can see
-some error output. Going forward, this will be a good place to debug errors. You
-should see something similar to:
+some error output. This error message was output at the time you restarted the
+server. Going forward, this will be a good place to debug errors. You should see
+something similar to:
 
 `error: Ignored attempt to bind route (/) to unknown controller :: default.`
 
