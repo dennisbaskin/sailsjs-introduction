@@ -157,6 +157,8 @@ Let's delete `homepage.ejs` because we will creating a basic REST service with
 JSON as the output. Reload the homepage in the browser and you should see an
 error (in a JSON format) stating that the view is missing.
 
+## Add a new default route
+
 Replace the default route in your `config/routes.js` file with the following:
 
 ```
@@ -190,3 +192,87 @@ something similar to:
 We will fix this in the next section when we discuss controllers. We will also
 revisit routing as we continue creating our application. We have enough to
 get us started at this point.
+
+
+# Controllers
+
+## Default controller
+
+Lets use sails generators to generate a new default controller. In your terminal
+in your project directory:
+
+```
+sails generate controller default index
+```
+
+http://sailsjs.com/documentation/concepts/controllers/generating-controllers
+describes the concept and syntax.
+
+This command will create a new file called `DefaultController.js` in the
+directory `api/controllers/`. It will add the route we specified (index) inside
+the file. It should look similar to the following:
+
+```
+/**
+ * DefaultController
+ *
+ * @description :: Server-side logic for managing defaults
+ * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
+ */
+
+module.exports = {
+  /**
+   * `DefaultController.index()`
+   */
+  index: function (req, res) {
+    return res.json({
+      todo: 'index() is not implemented yet!'
+    });
+  }
+};
+
+```
+
+Open `routes.js` again and let's make a route adjustment:
+
+change `'GET /': {controller: 'DefaultController'}'`
+
+to: `'get /': 'DefaultController.index'`
+
+## Capturing address parts as params
+
+You can capture adress parts as named params. Let's change our route to:
+
+```
+'get /:name': 'DefaultController.index'
+```
+
+And we will update the controller to use this param:
+
+```
+  index: function (req, res) {
+    var name = req.param('name') || 'unknown person',
+        greeting = 'Hello ' + name;
+
+    return res.json({
+      name: name,
+      greeting: greeting,
+    });
+  }
+```
+
+Restart sails and view the page by going to http://localhost:1337/John . You
+should see the reflected change in the response. However if you visit the same
+url without the name http://localhost:1337 , You will see an error. This is
+because we have changed the route and our app no longer knows what to do when
+there is nothing passed in. You can solve this by modifying the routes as
+follows:
+
+```
+module.exports.routes = {
+  'get /': 'DefaultController.index',
+  'get /:name': 'DefaultController.index'
+};
+```
+
+Restart the server and try both routes. You should have both working now.
