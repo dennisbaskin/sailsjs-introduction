@@ -21,5 +21,6 @@
  */
 
 module.exports.routes = {
-  'GET /': {controller: 'DefaultController'}
+  'get /': 'DefaultController.index',
+  'get /:name': 'DefaultController.index'
 };
