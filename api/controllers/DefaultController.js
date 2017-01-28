@@ -10,13 +10,7 @@ module.exports = {
    * `DefaultController.index()`
    */
   index: function (req, res) {
-    var name = req.param('name') || 'unknown person',
-        greeting = 'Hello ' + name;
-
-    return res.json({
-      name: name,
-      greeting: greeting,
-    });
+    return res.json({});
   }
 };
 
