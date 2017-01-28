@@ -50,7 +50,7 @@ nvm alias default v7.3.0
 > node.js you have installed. Some packages will need to
 > be reinstalled.
 
-# Introduction to sailsjs
+# Introduction to SailsJs
 
 ## Install sails
 
