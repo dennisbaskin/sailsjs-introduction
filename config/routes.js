@@ -22,5 +22,4 @@
 
 module.exports.routes = {
   'get /': 'DefaultController.index',
-  'get /:name': 'DefaultController.index'
 };
