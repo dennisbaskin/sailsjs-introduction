@@ -430,7 +430,7 @@ Add another record with a new attribute:
 curl -H "Content-Type: application/json" -X POST -d '{"name":"bob","password":"123", "email":"123@testemail.com"}' http://localhost:1337/users
 ```
 
-Visit http://localhost:1337/users/2 and you will notice the new record with the
+Visit <http://localhost:1337/users/2> and you will notice the new record with the
 new attribute. However if you visit http://localhost:1337/users/1 again you will
 notice that the email attribute is missing. If you visit http://localhost:1337/users
 you can see both records together.
