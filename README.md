@@ -84,7 +84,7 @@ sails lift
 
 You should see a message saying: "To see your app, visit http://localhost:1337"
 
-Visit [http://localhost:1337]
+Visit <http://localhost:1337>
 
 ## Create repo for project
 
@@ -143,8 +143,8 @@ HTTP route and it's value that delegates the functionality to the appropriate
 controller, action, view, or any combination of. The only decleration we have is
 saying is that the default HTTP route should load the homepage view. This
 view can be found in the `views/` directory, named `homepage.ejs`. If we visit
-the page (run `sails lift` first and then visit localhost:1337), you should see
-the contents of this file displayed.
+the page (run `sails lift` first and then visit <http://localhost:1337>), you
+should see the contents of this file displayed.
 
 If you are going to be building an application that requires views to be
 displayed, this is roughly how you will be creating them. In our example app we
@@ -261,9 +261,9 @@ And we will update the controller to use this param:
   }
 ```
 
-Restart sails and view the page by going to http://localhost:1337/John . You
+Restart sails and view the page by going to <http://localhost:1337/John>. You
 should see the reflected change in the response. However if you visit the same
-url without the name http://localhost:1337 , You will see an error. This is
+url without the name <http://localhost:1337>, You will see an error. This is
 because we have changed the route and our app no longer knows what to do when
 there is nothing passed in. You can solve this by modifying the routes as
 follows:
@@ -391,11 +391,11 @@ will run migrate safe anytime the message shows up.
 
 ## Blueprint freebies
 
-First, let's visit http://localhost:1337 and verfiy that all we get is an empty
-JSON object.
+First, let's visit <http://localhost:1337> and verfiy that all we get is an
+empty JSON object.
 
-If you visit http://localhost:1337/admin you will see an error page. However if
-you visit http://localhost:1337/users, you will notice an empty array. Even
+If you visit <http://localhost:1337/admin> you will see an error page. However,
+if you visit <http://localhost:1337/users>, you will notice an empty array. Even
 though we did not explicitly set any paths in our routes we still still get some
 REST api endpoints for free:
 
@@ -410,7 +410,7 @@ PATCH     | /:model/:id | UPDATE | update:  updates `model` with `id`=id
 ------------------------------------------------------------------------------
 ```
 
-Visiting http://localhost:1337/users/1 now will give us an error stating that
+Visiting <http://localhost:1337/users/1> now will give us an error stating that
 the record with the specified ID could not be found. This is because we have not
 created any records yet. To do so we will have to send a POST request to our
 api. You can use curl in the command line or use a toll like Postman to do the
@@ -431,6 +431,6 @@ curl -H "Content-Type: application/json" -X POST -d '{"name":"bob","password":"1
 ```
 
 Visit <http://localhost:1337/users/2> and you will notice the new record with the
-new attribute. However if you visit http://localhost:1337/users/1 again you will
-notice that the email attribute is missing. If you visit http://localhost:1337/users
+new attribute. However if you visit <http://localhost:1337/users/1> again you will
+notice that the email attribute is missing. If you visit <http://localhost:1337/users>
 you can see both records together.
