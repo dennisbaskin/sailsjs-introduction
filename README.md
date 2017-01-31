@@ -1030,3 +1030,16 @@ module.exports = {
 > records do not contain NULL values for the column, you can add this option
 > migrate, and then remove the option, and migrate again. This is one way to
 > avoid writing a query to update your records.
+
+### Cleanup for RDBMS
+
+After you have your new database set up, we can clean up our package file. All
+we need to do at this point is to just remove sails-disk. While it is okay to
+keep this installed, it just becomes unnecessary cruft. And it is good to clean
+up as you go. In you terminal run:
+
+```
+npm unistall sails-disk --save
+```
+
+This will remove the package from your `package.json` file.
