@@ -21,5 +21,12 @@
  */
 
 module.exports.routes = {
+  // default route
   'get /': 'DefaultController.index',
+
+  // users endpoint
+  'get /users': 'UsersController.list',
+  'get /users/:id': 'UsersController.show',
+  'post /users': 'UsersController.create',
+  'patch /users/:id': 'UsersController.update',
 };
