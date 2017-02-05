@@ -1043,3 +1043,484 @@ npm unistall sails-disk --save
 ```
 
 This will remove the package from your `package.json` file.
+
+# Custom Routing and API
+
+In the previous sections we saw what the Blueprint API gives us for free. But
+more often than not you will want to have more control over your APIs. Sails
+allows us to customize to fit our needs.
+
+First let's turn off the default Blueprint routing. In `config/blueprints.js` we
+need to comment out our previous options:
+
+```
+// rest: true,
+
+...
+
+// pluralize: true,
+```
+
+Let's also remove our UserController and User model:
+
+```
+rm api/controllers/UserController.js
+rm api/models/User.js
+```
+
+## Migrations
+
+We will be recreating these. Just removing these items doe snot clean up our
+database schema. We will need to do this next. We can do this either manually by
+dropping and recreating the database, but this is not a good practice as you go
+forward. Instead let's install the sails-migrations package that will allow us
+to have more fine control over this process. In the project directory:
+
+```
+npm install -g sails-migrations
+npm install --save sails-migrations
+```
+
+We install it globally first to get access to the CLI tools. Afterward, we need
+to create some migrations.
+
+### UUID extension for postgres
+
+If you are using postgres I recommend creating a migration to use UUIDs first:
+
+```
+sails-migrations generate add-uuid-extension
+```
+
+This will create a migration file with a timestamp prefix. Open the file
+it creates (inside `db/migrations` directory) and add:
+
+```
+const {log} = require('sails');
+
+exports.up = (knex, Promise) => {
+  return knex.raw('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+};
+
+exports.down = (knex, Promise) => {
+  log.warn('\n  Irreversible Migration\n');
+  return knex.schema;
+};
+```
+
+### Users Table
+
+Then let's create a migration to add a `users` table.
+
+> Note: we are adding Users plural not user singular. It is a much more common
+> practice and will not clash with the User table for the database users
+
+```
+sails-migrations generate add-users-table
+```
+
+In the generated file add:
+
+```
+exports.up = (knex, Promise) => {
+  return knex.schema
+
+    .dropTableIfExists('users')
+
+    .createTable('users', (table) => {
+      table.increments();
+
+      table.string('username')
+        .unique()
+        .notNullable();
+
+      table.string('email')
+        .unique()
+        .notNullable();
+
+      table.uuid('uuid')
+        .notNullable()
+        .defaultTo(knex.raw('uuid_generate_v4()'));
+
+      table.string('password')
+        .notNullable();
+
+      table.timestamps();
+    });
+};
+
+exports.down = (knex, Promise) => {
+  return knex.schema.dropTableIfExists('users');
+};
+```
+
+### Remove public.user table
+
+Since we have generated a previous `user` table we need to remove it. It has
+been automatically added to the public schema to avoid internal naming clashes.
+In the project directory run:
+
+```
+sails-migrations generate drop-public-user-table
+```
+
+And in the genrated file add:
+
+```
+const {log} = require('sails');
+
+exports.up = (knex, Promise) => {
+  return knex.schema.dropTableIfExists('public.user');
+};
+
+exports.down = (knex, Promise) => {
+  log.warn('\n  Irreversible Migration\n');
+  return knex.schema;
+};
+```
+
+> Note: *knex*, in the above examples, is the name of the library it uses
+> internally for migrations.
+
+### Migrating
+
+Now in the project directory run:
+
+```
+sails-migrations migrate
+```
+
+You should get a message similar to the following:
+
+```
+Batch 1 run: 3 migrations
+/Users/dennisbaskin/sailsjs-introduction/db/migrations/20170204151018_add-uuid-extension.js
+/Users/dennisbaskin/sailsjs-introduction/db/migrations/20170204151136_add-users-table.js
+/Users/dennisbaskin/sailsjs-introduction/db/migrations/20170204172336_drop-public-user-table.js
+```
+
+And if we go back to our postgres CLI (`psql sails-test`) we can check to verify
+that everything is in order. In psql command line interface type `\dt`:
+
+```
+sails-test=# \dt
+               List of relations
+ Schema |         Name          | Type  | Owner
+--------+-----------------------+-------+-------
+ public | sails_migrations      | table | sails
+ public | sails_migrations_lock | table | sails
+ public | users                 | table | sails
+(3 rows)
+```
+
+Notice that we no longer have a user table and now have a table called
+`sails_migrations` to track our migrations. Lets take a closer look by typing
+`TABLE sails_migrations;`. It should look similar to the following:
+
+```
+sails-test=# TABLE sails_migrations;
+ id |                   name                   | batch |       migration_time
+----+------------------------------------------+-------+----------------------------
+  1 | 20170204151018_add-uuid-extension.js     |     1 | 2017-02-04 20:04:41.228-07
+  2 | 20170204151136_add-users-table.js        |     1 | 2017-02-04 20:04:41.249-07
+  3 | 20170204172336_drop-public-user-table.js |     1 | 2017-02-04 20:04:41.254-07
+(3 rows)
+```
+
+And a quick look at our `users` table:
+
+```
+sails-test=# TABLE users;
+ id | username | email | uuid | password | created_at | updated_at
+----+----------+-------+------+----------+------------+------------
+(0 rows)
+
+sails-test=# \d users;
+                                    Table "public.users"
+   Column   |           Type           |                     Modifiers
+------------+--------------------------+----------------------------------------------------
+ id         | integer                  | not null default nextval('users_id_seq'::regclass)
+ username   | character varying(255)   | not null
+ email      | character varying(255)   | not null
+ uuid       | uuid                     | not null default uuid_generate_v4()
+ password   | character varying(255)   | not null
+ created_at | timestamp with time zone |
+ updated_at | timestamp with time zone |
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+    "users_email_unique" UNIQUE CONSTRAINT, btree (email)
+    "users_username_unique" UNIQUE CONSTRAINT, btree (username)
+```
+
+We have now successfully verified our migration.
+
+## Custom API
+
+### Routes
+
+We should define our routes and controllers first, starting with routes:
+
+```
+module.exports.routes = {
+  // default route
+  'get /': 'DefaultController.index',
+
+  // users enpoint
+  'get /users': 'UsersController.list',
+  'get /users/:id': 'UsersController.show',
+  'post /users': 'UsersController.create',
+  'patch /users/:id': 'UsersController.update',
+};
+```
+
+These will function as a few basic endpoints to get us started.
+
+### Controller
+
+We need to generate a controller that will handle these endpoints.
+
+```
+sails generate controller users create list show update
+```
+
+This should have created a controller stub:
+
+```
+module.exports = {
+  /**
+   * `UsersController.create()`
+   */
+  create: function (req, res) {
+    return res.json({
+      todo: 'create() is not implemented yet!'
+    });
+  },
+
+
+  /**
+   * `UsersController.list()`
+   */
+  list: function (req, res) {
+    return res.json({
+      todo: 'list() is not implemented yet!'
+    });
+  },
+
+
+  /**
+   * `UsersController.show()`
+   */
+  show: function (req, res) {
+    return res.json({
+      todo: 'show() is not implemented yet!'
+    });
+  },
+
+
+  /**
+   * `UsersController.update()`
+   */
+  update: function (req, res) {
+    return res.json({
+      todo: 'update() is not implemented yet!'
+    });
+  }
+};
+
+```
+
+If we test it now, our paths would work but would not do anything significant.
+
+### Model
+
+From here we need to add a model for our table. Using the model generator we can
+accomplish this as follows:
+
+```
+sails generate model user username:string email:email uuid:uuid password:string
+```
+
+This will create a User model in our `api/models` directory, similar to how we
+have seen before when using generators. We have also predefined a few attributes
+which will helps us flesh out our model. Your model shoul look similar to:
+
+```
+module.exports = {
+  attributes: {
+    username: { type: 'string' },
+
+    email: { type: 'email' },
+
+    uuid: { type: 'uuid' },
+
+    password: { type: 'string' },
+  }
+};
+```
+
+Let's modify the file and add some validations. It should now look like the
+following:
+
+```
+const uuid = require('node-uuid');
+
+module.exports = {
+  tableName: 'users',
+
+  attributes: {
+    username: {
+      maxLength: 16,
+      minLength: 3,
+      notNull: true,
+      required: true,
+      type: 'string',
+      unique: true,
+    },
+
+    email: {
+      notNull: true,
+      required: true,
+      type: 'email',
+      unique: true,
+    },
+
+    uuid: {
+      notNull: true,
+      type: 'uuid',
+      defaultsTo: () => uuid.v4(),
+    },
+
+    password: {
+      notNull: true,
+      required: true,
+      type: 'string',
+    },
+  }
+};
+```
+
+We are using the `node-uuid` package, but have not yet installed it. In your
+project directory install the package:
+
+```
+npm install node-uuid --save
+```
+
+### Tying the Controller and Model
+
+In our controller, we need will add a few lines to bring our API together:
+
+```
+module.exports = {
+  // post /users
+  create: (req, res) => {
+    const params = req.allParams();
+
+    return User.create(params)
+      .then((user) => res.json(user))
+      .catch((err) => res.json(err));
+  },
+
+  // get /users
+  list: (req, res) => {
+    return User.find()
+      .then((users) => res.json(users))
+      .catch((err) => res.json(err));
+  },
+
+  // get /users/:id
+  show: (req, res) => {
+    const id = req.param('id');
+
+    return User.find(id)
+      .then((user) => res.json(user))
+      .catch((err) => res.json(err));
+  },
+
+  // patch /users/:id
+  update: (req, res) => {
+    const params = req.allParams();
+
+    return User.update(params.id, params)
+      .then((user) => res.json(user))
+      .catch((err) => res.json({error: err, params: params}));
+  }
+};
+
+```
+
+We need to restart our server by running `sails lift`. Then, at this point we
+can create a user by sending a POST request to <http://localhost:1337/users>:
+
+```
+curl -H "Content-Type: application/json" -X POST -d '{"username":"bob", "password":"bob", "email": "123@abc.com"}' http://localhost:1337/users
+```
+
+You can check which users you currently have by either going to your browser or
+sending a GET request to <http://localhost:1337/users>:
+
+```
+curl -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:1337/users
+```
+
+Or if we know the id, we can look at just one user by sending a GET request to
+<http://localhost:1337/users/1> (where 1 is the id of the user):
+
+```
+curl -H "Accept: application/json" -H "Content-Type: application/json" -X GET http://localhost:1337/users
+```
+
+We can also update the created user by sending a PATCH request to
+<http://localhost:1337/users/1>:
+
+```
+curl -H "Content-Type: application/json"--request PATCH -d '{"username":"bob", "password":"bob", "email": "1232333a@bc.com"}' http://localhost:1337/users/1
+```
+
+If you want to test validation you can send a bad POST request with a bad email
+to <http://localhost:1337/users>:
+
+```
+curl -H "Content-Type: application/json" -X POST -d '{"username":"bob", "password":"bob", "email": "missing-at-symbol.com"}' http://localhost:1337/users
+```
+
+Finally, we can clean up our controller to make it slightly cleaner:
+
+```
+module.exports = {
+  // post /users
+  create: (req, res) => {
+    return withErrorHandling(req, res, (params) => {
+      return User.create(params);
+    });
+  },
+
+  // get /users
+  list: (req, res) => {
+    return withErrorHandling(req, res, (_params) => {
+      return User.find();
+    });
+  },
+
+  // get /users/:id
+  show: (req, res) => {
+    return withErrorHandling(req, res, (params) => {
+      return User.find(params.id);
+    });
+  },
+
+  // patch /users/:id
+  update: (req, res) => {
+    return withErrorHandling(req, res, (params) => {
+      return User.update(params.id, params);
+    });
+  }
+};
+
+const withErrorHandling = (req, res, promise, responseFilter = (r) => r) => {
+  const params = req.allParams();
+  return promise(params)
+    .then((response) => res.json(responseFilter(response)))
+    .catch((err) => res.json({error: err, params: params}));
+};
+```
